@@ -27,7 +27,7 @@
  * is negligible. This improvement is a consideration for future, larger
  * projects.
  */
-
+/*test comment*/
 window.addEventListener("load", main);
 
 document.getElementById("gameBoardElem").addEventListener("click", function(e){
