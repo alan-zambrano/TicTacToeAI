@@ -27,18 +27,6 @@
  * is negligible. This improvement is a consideration for future, larger
  * projects.
  */
-/*test comment*/
-window.addEventListener("load", main);
-
-document.getElementById("gameBoardElem").addEventListener("click", function(e){
-	if(e.target && e.target.className == "token"){
-		if(playerTurn(e.target.id) != -1){
-			document.getElementById(e.target.id).src = "tictactoe_X.png";
-		}
-		compTurn();
-	}
-})
-
 
 class Board{
 	constructor(x00, x01, x02, x10, x11, x12, x20, x21, x22){
@@ -47,13 +35,13 @@ class Board{
 					[x20, x21, x22]];
 	}
 	
-	//creates a new board with the added token at (@x,@y) and returns that board
-	place(x, y, token){
+	//creates a new board with the added token at (@y,@x) and returns that board
+	place(y, x, token){
 		let newState = new Board();
 		for(let i = 0; i < 3; i++){
 			newState.board[i] = this.board[i].slice();
 		}
-		newState.board[x][y] = token;
+		newState.board[y][x] = token;
 		return newState;
 	}
 }
@@ -77,8 +65,8 @@ class Node{
 		this.children = [[null, null, null], [null, null, null], [null, null, null]];
 	}
 	
-	addNode(val, xPos, yPos, gameBoard, turn){
-		this.children[xPos][yPos] = new Node(this, val, gameBoard, turn);
+	addNode(val, yPos, xPos, gameBoard, turn){
+		this.children[yPos][xPos] = new Node(this, val, gameBoard, turn);
 	}
 }
 /*
@@ -119,13 +107,13 @@ function areEqual(){
 //return: 'X' if X wins, 'O' if O wins, null if neither
 function checkGameOver(currGameState){
 	let TL = currGameState.board[0][0];
-	let TM = currGameState.board[1][0];
-	let TR = currGameState.board[2][0];
-	let ML = currGameState.board[0][1];
+	let TM = currGameState.board[0][1];
+	let TR = currGameState.board[0][2];
+	let ML = currGameState.board[1][0];
 	let MM = currGameState.board[1][1];
-	let MR = currGameState.board[2][1];
-	let BL = currGameState.board[0][2];
-	let BM = currGameState.board[1][2];
+	let MR = currGameState.board[1][2];
+	let BL = currGameState.board[2][0];
+	let BM = currGameState.board[2][1];
 	let BR = currGameState.board[2][2];
 	
 	//check rows
@@ -171,7 +159,7 @@ function isFull(gameBoard){
 
 /*
  *@gameTree: main Tree object
- *@currState: current node in the tree
+ *@currNode: current node in the tree
  *
  *Builds a tree of all playable combinations of tokens for every turn. This
  * considers 3 'O' in a row as a winning state i.e. comp must be 'O' and human
@@ -214,27 +202,34 @@ function buildGameTree(gameTree, currNode){
 		}
 	}
 	
-	//recurse through all children
-	let currMax = 0;
+	/*recurse through all children; get both minimum and maximum values*/
+	let currMax = Number.NEGATIVE_INFINITY;
+	let currMin = Number.POSITIVE_INFINITY;
 	for(let i = 0; i < 3; i++){
 		for(let j = 0; j < 3; j++){
 			if(currNode.children[i][j]){
 				let childVal = buildGameTree(gameTree, currNode.children[i][j]);
-				if(Math.abs(childVal) > Math.abs(currMax)){
+				if(childVal > currMax){
 					currMax = childVal;
-			}
+				}
+				if(childVal < currMin){
+					currMin = childVal;
+				}
 			}
 		}
 	}
-	//update current node value
-	if(currMax < 0){
-		currNode.data = currMax + 1;
-	}
-	else if(currMax > 0){
+	/*if the current token is "X", then it's O's turn and we want to maximize
+	and vice versa*/
+	/*maximize values for computer*/
+	if(currNode.token == "X"){
 		currNode.data = currMax - 1;
 	}
+	/*minimize values for opponent*/
+	else if(currNode.token == "O"){
+		currNode.data = currMin + 1;
+	}
 	else{
-		currNode.data = currMax;
+		console.log("God help you, something has gone wrong.");
 	}
 	return currNode.data;
 }
@@ -245,7 +240,7 @@ function playerTurn(clickLocation){
 	CURR_TURN = CURR_TURN.children[clickLocation.slice(0,1)][clickLocation.slice(1)];
 }
 function compTurn(){
-	if(CURR_TURN && checkGameOver(CURR_TURN.boardObj)){
+	if(CURR_TURN && (checkGameOver(CURR_TURN.boardObj) || isFull(CURR_TURN.boardObj))){
 		GAME_OVER = true;
 	}
 	
@@ -257,7 +252,8 @@ function compTurn(){
 	let maxI = 0;
 	let maxJ = 0;
 	
-	//select the optimal turn from the current node's children
+	//iterate through children and select that with the most maximum value to
+	//guarantee the optimal turn
 	for(let i = 0; i < 3; i++){
 		for(let j = 0; j < 3; j++){
 			if(CURR_TURN.children[i][j] && CURR_TURN.children[i][j].data > currMax){
@@ -268,7 +264,7 @@ function compTurn(){
 		}
 	}
 	
-	//traverse node through optimal turn
+	//traverse node through optimal turn and update the GUI
 	CURR_TURN = CURR_TURN.children[maxI][maxJ];
 	let docID = maxI.toString() + maxJ.toString();
 	document.getElementById(docID).src = "tictactoe_O.png";
@@ -277,7 +273,17 @@ function compTurn(){
 		GAME_OVER = true;
 	}
 }
-function main(){
+/*main*/
+window.onload = function(){
 	buildGameTree(GAME_TREE, GAME_TREE.root);
-	CURR_TURN = GAME_TREE.root
+	CURR_TURN = GAME_TREE.root;
+
+	document.getElementById("gameBoardElem").addEventListener("click", function(e){
+		if(e.target && e.target.className == "token"){
+			if(playerTurn(e.target.id) != -1){
+				document.getElementById(e.target.id).src = "tictactoe_X.png";
+			}
+			compTurn();
+		}
+	})
 }

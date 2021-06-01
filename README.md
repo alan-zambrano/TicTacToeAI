@@ -12,37 +12,18 @@ children must not necessarily be full boards, but tokens must be in a position
 where either X or O wins.
 
 ## Node
-Used to contain root and its children, which in turn contain their ownchildren
+Used to contain root and its children, which in turn contain their own children
 and so forth. It is a tool used to traverse the tree.
 
 ## Board
-Contains a 2D array used to represent the game board. A board
-\[\[O...\]\[...\]\[...\]\]would contain an 'O' in the top left corner of the
+Contains a 2D array used to represent the game board. The following board array
+\[\[O...\]\[...\]\[...\]\] would contain an 'O' in the top left corner of the
 board
 
 ## Algorithm
-The algorithm I used was inspired by the minmax algorithm in which the AI marks
-nodes that are more likely to win with favorable values. The AI starts as soon
-as the tree is built. Since all children represent endgame, I mark them with
-either a 10 for winning games, -10 for losing games, and 0 for drawn games.
-Then after all of a given parent's children have calculated their values, the
-parent must select one of its children for the perfect game; however it must
-also relay the information back to its own parent so that it may select the
-optimal move from its own children. The parent chooses by comparing its
-children and selcting its most negative or most positive score with the
-following comparison: max(abs(child1), abs(child2), ...). Suppose the parent
-selects a positive childx, then the parent's value will be childx-1, or if
-childx is negative, the parent will be childx + 1. We want the value to
-decrease over generations because we want the path that will guarantee victory
-in the shortest number of moves.
+This program uses the minimax algorithm which builds on the concept that each player is trying to maximize their score. Thus it's our AI's job to maximize its own score while minimizing the opponent's score. In a win/lose game like tic-tac-toe, we can quantify a player's score by the amount of turns it takes to win.
+We can visualize the game's timeline with a tree in which each node represents a turn in the game. Thus each leaf represents a different endgame layout. In the recursive approach, the leaves are one of three base cases: 1) the AI wins 2) the opponent wins 3) neither wins and we draw. They then have a score of 10, -10 and 0 respectively. Parent nodes, however must be indicative of their proximity to winning or losing states, and thus decrease the value by 1. The values of direct parents of losing nodes are then -9 and that of winning nodes are 9. Drawn states continue to be 0. 
+Further, parents with multiple children face a dilemma in which they must select their own value from the perhaps wildly varying values of their children. We then must consider the behavior of the player whose turn it is for that particular node. We must assume that the opponent will try to minimize our score and will select the most negative child and that our AI should aim for the most positive child. Thus for non-leaf nodes, we alternate values between most negative value + 1 and most positive value - 1 depending on whose turn it is for that particular node.
+The algorithm is eloquently described in more detail here: https://www.neverstopbuilding.com/blog/minimax
 
 ## Next
-Since testing this algorithm, I've discovered that it's not unbeatable, which
-defeats the purpose of an unbeatable AI. In particular, it fails when the
-player sets up the board so that they can win in more than one way in a single
-turn. Then the AI can only block one of the two ways, and the player ends up
-winning on the next turn. The problem is not that the AI can only make one
-turn, as it must still follow the rules of the game, but that it should never
-be in that position to begin with. The optimal turn should not include one in
-which the AI is put into an impossible-to-win game, so the AI should operate
-within the constraints of the game to avoid that at all costs.
