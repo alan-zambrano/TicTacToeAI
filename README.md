@@ -9,7 +9,8 @@ move. The program starts by creating a tree with an empty board as root. Every
 generation thereafter adds another move to the board. This tree is built
 recursively such that all children are different endgame states. Indeed,
 children must not necessarily be full boards, but tokens must be in a position
-where either X or O wins.
+such that either X or O wins.
+Whether the player or the CPU starts the game decides what the tree looks like and therefore the algorithm will generate each as necessary.
 
 ## Node
 Used to contain root and its children, which in turn contain their own children

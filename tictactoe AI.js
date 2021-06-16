@@ -72,14 +72,18 @@ class Node{
 /*
  *@root: Node object with a blank @Board
  *
- *Sets root's token to 'O' so that the first actual turn (root's child)
- * will be 'X'
+ *@turn is initialized to null. It is set when the player decides whether to go
+ * first or let the CPU play first. If the player decides to go first, root's
+ * token must be set to O. Given that the player is X and the CPU is O it
+ * follows that root's token is set to the opposite of the first turn. This is
+ * because the tokens alternate per turn, and the initial state of the board is
+ * blank; therefore to make the first turn X, the previous turn must be O.The
+ * reverse must also be true if the CPU makes the first move.
  */
 class Tree{
-	constructor(data){
+	constructor(){
 		let gameState = new Board(null, null, null, null, null, null, null, null, null);
-		let node = new Node(null, data, gameState, 'O');
-		this.root = node;
+		this.root = new Node(null, 1, gameState, null);
 	}
 }
 
@@ -89,7 +93,7 @@ class Tree{
  */
 let GAME_TREE = new Tree();
 let CURR_TURN;
-let GAME_OVER = false;
+let GAME_OVER = true;
 
 //used to check equality for an indefinite number of objects
 function areEqual(){
@@ -165,7 +169,7 @@ function isFull(gameBoard){
  * considers 3 'O' in a row as a winning state i.e. comp must be 'O' and human
  * player must be 'X'
  */
-function buildGameTree(gameTree, currNode){
+function buildGameTree(currNode){
 	//Mark current node if this is a winning, losing, or drawn game
 	let winner = checkGameOver(currNode.boardObj);
 	if(winner == 'X'){
@@ -202,13 +206,13 @@ function buildGameTree(gameTree, currNode){
 		}
 	}
 	
-	/*recurse through all children; get both minimum and maximum values*/
+	//recurse through all children; get both minimum and maximum values
 	let currMax = Number.NEGATIVE_INFINITY;
 	let currMin = Number.POSITIVE_INFINITY;
 	for(let i = 0; i < 3; i++){
 		for(let j = 0; j < 3; j++){
 			if(currNode.children[i][j]){
-				let childVal = buildGameTree(gameTree, currNode.children[i][j]);
+				let childVal = buildGameTree(currNode.children[i][j]);
 				if(childVal > currMax){
 					currMax = childVal;
 				}
@@ -218,9 +222,9 @@ function buildGameTree(gameTree, currNode){
 			}
 		}
 	}
-	/*if the current token is "X", then it's O's turn and we want to maximize
-	and vice versa*/
-	/*maximize values for computer*/
+	//if the current token is "X", then it's O's turn and we want to maximize
+	// and vice versa
+	/*maximize values for CPU*/
 	if(currNode.token == "X"){
 		currNode.data = currMax - 1;
 	}
@@ -253,7 +257,7 @@ function compTurn(){
 	let maxJ = 0;
 	
 	//iterate through children and select that with the most maximum value to
-	//guarantee the optimal turn
+	// guarantee the optimal turn
 	for(let i = 0; i < 3; i++){
 		for(let j = 0; j < 3; j++){
 			if(CURR_TURN.children[i][j] && CURR_TURN.children[i][j].data > currMax){
@@ -275,9 +279,8 @@ function compTurn(){
 }
 /*main*/
 window.onload = function(){
-	buildGameTree(GAME_TREE, GAME_TREE.root);
-	CURR_TURN = GAME_TREE.root;
-
+	//Advances CURR_TURN to the child determined by the click location, and
+	// subsequently updates its graphic
 	document.getElementById("gameBoardElem").addEventListener("click", function(e){
 		if(e.target && e.target.className == "token"){
 			if(playerTurn(e.target.id) != -1){
@@ -285,5 +288,42 @@ window.onload = function(){
 			}
 			compTurn();
 		}
-	})
+	});
+	document.getElementById("playerStart").addEventListener("click", function(e){
+		//This needs to rebuild GAME_TREE if the CPU started last game and
+		// vice versa for CPUStart.
+		if(GAME_TREE.root.token != "O"){
+			GAME_TREE.root.token = "O";
+			buildGameTree(GAME_TREE.root);
+		}
+		CURR_TURN = GAME_TREE.root;
+		
+		//Clear the board and let the game start by disabling GAME_OVER
+		for(let i = 0; i < 3; i++){
+			for(let j = 0; j < 3; j++){
+				let docID = i.toString() + j.toString();
+				document.getElementById(docID).src="tictactoe_Box.png";
+			}
+		}
+		GAME_OVER = false;
+	});
+	document.getElementById("CPUStart").addEventListener("click", function(e){
+		//This needs to rebuild GAME_TREE if the player started last game and
+		// vice versa for playerStart.
+		if(GAME_TREE.root.token != "X"){
+			GAME_TREE.root.token = "X";
+			buildGameTree(GAME_TREE.root);
+		}
+		CURR_TURN = GAME_TREE.root;
+		
+		//Clear the board and let the game start by disabling GAME_OVER
+		for(let i = 0; i < 3; i++){
+			for(let j = 0; j < 3; j++){
+				let docID = i.toString() + j.toString();
+				document.getElementById(docID).src="tictactoe_Box.png";
+			}
+		}
+		GAME_OVER = false;
+		compTurn();
+	});
 }
